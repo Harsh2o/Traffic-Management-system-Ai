@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Traffic Management Portal</title>
+  <link rel="icon" class="img" type="image/png" href="{{ url_for('static', filename='images/generatedimage.png') }}">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+      color: #ffffff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Animated background particles */
+    .background-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.1;
+      background: radial-gradient(circle at 20% 80%, #3b82f6 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, #8b5cf6 0%, transparent 50%),
+                  radial-gradient(circle at 40% 40%, #06b6d4 0%, transparent 50%);
+      animation: drift 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift {
+      0% { transform: translateX(0px) translateY(0px) rotate(0deg); }
+      100% { transform: translateX(50px) translateY(-30px) rotate(2deg); }
+    }
+
+    /* Navbar */
+    .navbar {
+      background: rgba(15, 15, 20, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar .logo {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .navbar-nav {
+      display: flex;
+      list-style: none;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .navbar-nav li {
+      position: relative;
+    }
+
+    .navbar-nav > li > a {
+      text-decoration: none;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .navbar-nav > li > a:hover {
+      color: #ffffff;
+      background: rgba(59, 130, 246, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(20, 20, 30, 0.98);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      min-width: 200px;
+      padding: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      margin-top: 8px;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .navbar-nav li:hover .dropdown {
+      display: block;
+    }
+
+    .dropdown a {
+      display: block;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .dropdown a:hover {
+      color: #ffffff;
+      background: rgba(59, 130, 246, 0.15);
+    }
+
+    /* Auth Section */
+    .auth-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .g_id_signin {
+      transform: scale(0.9);
+    }
+
+    #profile-container {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    #profile-pic {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(59, 130, 246, 0.3);
+    }
+
+    #user-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #ffffff;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 85vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      padding: 0 24px;
+    }
+
+    .hero-content {
+      max-width: 900px;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: heroSlideUp 1s ease-out 0.2s forwards;
+    }
+
+    @keyframes heroSlideUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 700;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      margin-bottom: 40px;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      font-weight: 400;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 16px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+    }
+
+    /* Section Containers */
+    .section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Intro Section */
+    .intro {
+      padding: 100px 0;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .intro-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .intro-text h2 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #ffffff;
+    }
+
+    .intro-text p {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.7;
+    }
+
+    .intro-img {
+      position: relative;
+    }
+
+    .intro-img img {
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Features Section */
+    .features {
+      padding: 100px 0;
+    }
+
+    .features h2 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 60px;
+      color: #ffffff;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 40px 32px;
+      border-radius: 16px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(59, 130, 246, 0.3);
+      box-shadow: 0 20px 60px rgba(59, 130, 246, 0.1);
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+
+    .feature-card p {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    /* Upload Section */
+    .upload-section {
+      padding: 100px 0;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .upload-section h2 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 60px;
+      color: #ffffff;
+    }
+
+    .upload-container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .upload-box {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 2px dashed rgba(59, 130, 246, 0.3);
+      border-radius: 20px;
+      padding: 60px 40px;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-box:hover {
+      border-color: rgba(59, 130, 246, 0.5);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .upload-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 50%;
+      margin-bottom: 24px;
+    }
+
+    .upload-icon svg {
+      width: 40px;
+      height: 40px;
+      stroke: #3b82f6;
+      stroke-width: 2;
+    }
+
+    .upload-text {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    .browse-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #374151, #4b5563);
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 12px 24px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .browse-btn:hover {
+      background: linear-gradient(135deg, #4b5563, #6b7280);
+      transform: translateY(-1px);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-name {
+      color: #ffffff;
+      font-size: 1rem;
+      margin-bottom: 24px;
+      min-height: 24px;
+      word-break: break-word;
+      font-weight: 500;
+    }
+
+    .upload-btn {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 14px 40px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      max-width: 200px;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .upload-btn:hover {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Footer */
+    .footer {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 60px 0 40px;
+      text-align: center;
+    }
+
+    .footer p {
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 16px;
+    }
+
+    .footer a {
+      color: #3b82f6;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .footer a:hover {
+      color: #60a5fa;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .navbar-container {
+        padding: 0 16px;
+      }
+
+      .navbar-nav {
+        gap: 20px;
+      }
+
+      .intro-container {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        text-align: center;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .upload-box {
+        padding: 40px 24px;
+        margin: 0 16px;
+      }
+
+      .section {
+        padding: 0 16px;
+      }
+    }
+
+    /* Smooth scroll */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Loading animation for upload */
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .loading .upload-btn {
+      background: linear-gradient(135deg, #6b7280, #9ca3af);
+    }
+  </style>
+</head>
+<body>
+  <div class="background-animation"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <div class="logo">Traffic Portal</div>
+      <ul class="navbar-nav">
+        <li><a href="#">Home</a></li>
+        <li><a href="{{ url_for('complaint') }}">Lodge Complaint</a></li>
+        <li>
+          <a href="#">Features ▾</a>
+          <div class="dropdown">
+            <a href="#upload">Upload Traffic Video</a>
+            <a href="#">Live Traffic View</a>
+            <a href="#">Reports & Analytics</a>
+            <a href="#">AI Insights</a>
+          </div>
+        </li>
+        <li>
+          <a href="#">About ▾</a>
+          <div class="dropdown">
+            <a href="#">Our Team</a>
+            <a href="#">Contact Us</a>
+            <a href="#">Privacy Policy</a>
+          </div>
+        </li>
+        <li class="auth-section">
+          <div id="g_id_onload"
+               data-client_id="260197927815-bthjovm9cn7qkueribkg1hkojnr2nerg.apps.googleusercontent.com"
+               data-callback="handleCredentialResponse">
+          </div>
+          <div id="google-btn"
+               class="g_id_signin"
+               data-type="standard"
+               data-theme="outline"
+               data-size="medium"
+               data-text="signin">
+          </div>
+          <div id="profile-container">
+            <img id="profile-pic" alt="Profile Picture">
+            <span id="user-name"></span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Smart Traffic Management</h1>
+      <p>Revolutionizing urban mobility with AI-powered traffic analysis, real-time insights, and intelligent monitoring solutions.</p>
+      <a href="#upload" class="cta-btn">
+        <span>Get Started</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 1V15M1 8H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Intro -->
+  <section class="intro">
+    <div class="section">
+      <div class="intro-container">
+        <div class="intro-text">
+          <h2>Welcome to the Future of Traffic Management</h2>
+          <p>
+            Our advanced platform combines artificial intelligence, computer vision, and real-time analytics to transform how cities manage traffic flow. Upload traffic videos, generate comprehensive reports, and gain actionable insights for smarter urban planning and congestion management.
+          </p>
+        </div>
+        <div class="intro-img">
+          <img src="{{ url_for('static', filename='images/generatedimage.png') }}" alt="Traffic Management Dashboard">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="section">
+      <h2>Powerful Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>Intelligent Video Processing</h3>
+          <p>Upload traffic videos with drag-and-drop simplicity. Our AI instantly analyzes vehicle patterns, density, and flow dynamics with precision.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Real-Time Monitoring</h3>
+          <p>Monitor live traffic conditions, detect congestion patterns, and receive instant alerts for unusual traffic scenarios.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Advanced Analytics</h3>
+          <p>Generate detailed reports with visual charts, traffic flow analysis, and predictive insights to optimize traffic management strategies.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Upload -->
+  <section id="upload" class="upload-section">
+    <div class="section">
+      <h2>Upload Traffic Video</h2>
+      <div class="upload-container">
+        <form action="/upload" method="post" enctype="multipart/form-data" class="upload-box"
+              ondrop="handleDrop(event)" ondragover="event.preventDefault()">
+          <div class="upload-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 0l-4 4m4-4l4 4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+            </svg>
+          </div>
+          <div class="upload-text">Drag & drop your video file here<br>or browse to select</div>
+          <label class="browse-btn" for="videoInput">Choose File</label>
+          <input type="file" id="videoInput" name="video" accept="video/*" required />
+          <div class="file-name" id="fileName"></div>
+          <button type="submit" class="upload-btn">Upload & Analyze</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="section">
+      <p>&copy; 2025 Traffic Portal. All Rights Reserved.</p>
+      <p>
+        <a href="#">Privacy Policy</a> |
+        <a href="#">Terms of Service</a> |
+        <a href="#">API Documentation</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    const fileInput = document.getElementById('videoInput');
+    const fileNameDisplay = document.getElementById('fileName');
+    const uploadBox = document.querySelector('.upload-box');
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        fileNameDisplay.textContent = `Selected: ${fileInput.files[0].name}`;
+        fileNameDisplay.style.color = '#3b82f6';
+      } else {
+        fileNameDisplay.textContent = '';
+      }
+    });
+
+    function handleDrop(event) {
+      event.preventDefault();
+      uploadBox.classList.remove('dragover');
+      const files = event.dataTransfer.files;
+      if (files.length > 0 && files[0].type.startsWith('video/')) {
+        fileInput.files = files;
+        fileNameDisplay.textContent = `Selected: ${files[0].name}`;
+        fileNameDisplay.style.color = '#3b82f6';
+      } else {
+        fileNameDisplay.textContent = 'Please upload a valid video file.';
+        fileNameDisplay.style.color = '#ef4444';
+        setTimeout(() => {
+          fileNameDisplay.textContent = '';
+          fileInput.value = '';
+        }, 3000);
+      }
+    }
+
+    // Enhanced drag and drop visual feedback
+    uploadBox.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = 'rgba(59, 130, 246, 0.8)';
+      uploadBox.style.background = 'rgba(59, 130, 246, 0.1)';
+    });
+
+    uploadBox.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+      uploadBox.style.background = 'rgba(255, 255, 255, 0.05)';
+    });
+
+    // Handle Google sign-in response
+    function handleCredentialResponse(response) {
+      fetch("/google-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: response.credential })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Login response:", data);
+        if (data.picture && data.name) {
+          document.getElementById("google-btn").style.display = "none";
+          document.getElementById("profile-container").style.display = "flex";
+          document.getElementById("profile-pic").src = data.picture;
+          document.getElementById("user-name").innerText = data.name;
+        } else {
+          alert("Login succeeded but no profile info found!");
+        }
+      })
+      .catch(err => {
+        console.error("Login error:", err);
+        alert("Login failed. Please try again.");
+      });
+    }
+
+    // Add loading state to upload
+    uploadBox.addEventListener('submit', function(e) {
+      if (fileInput.files.length > 0) {
+        uploadBox.classList.add('loading');
+        document.querySelector('.upload-btn').textContent = 'Uploading...';
+      }
+    });
+
+    // Smooth navbar background change on scroll
+    window.addEventListener('scroll', () => {
+      const navbar = document.querySelector('.navbar');
+      if (window.scrollY > 50) {
+        navbar.style.background = 'rgba(10, 10, 15, 0.98)';
+      } else {
+        navbar.style.background = 'rgba(15, 15, 20, 0.95)';
+      }
+    });
+  </script>
+</body>
+</html>

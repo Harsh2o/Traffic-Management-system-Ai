@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Traffic Management Portal</title>
+  <link rel="icon" class="img" type="image/png" href="{{ url_for('static', filename='images/generatedimage.png') }}">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: #1c1c1c;
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .navbar .logo {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #fff;
+    }
+    .navbar ul {
+      list-style: none;
+      display: flex;
+      gap: 28px;
+      margin: 0;
+      padding: 0;
+    }
+    .navbar ul li {
+      position: relative;
+    }
+    .navbar ul li a {
+      text-decoration: none;
+      color: #ddd;
+      font-size: 1rem;
+      transition: color 0.2s;
+    }
+    .navbar ul li a:hover {
+      color: #fff;
+    }
+    .navbar ul li ul {
+      display: none;
+      position: absolute;
+      top: 40px;
+      left: 0;
+      background: #222;
+      border-radius: 8px;
+      min-width: 180px;
+      padding: 10px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .navbar ul li:hover ul {
+      display: block;
+    }
+    .navbar ul li ul li {
+      padding: 8px 20px;
+    }
+    .navbar ul li ul li a {
+      color: #ccc;
+      font-size: 0.95rem;
+    }
+    .navbar ul li ul li a:hover {
+      color: #fff;
+    }
+
+    /* Google sign in */
+    .g_id_signin {
+      transform: scale(0.9);
+      transform-origin: left;
+    }
+
+    /* Profile info */
+    #profile-container {
+      display: none; /* hidden until login */
+      align-items: center;
+      gap: 10px;
+    }
+    #profile-pic {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+    }
+    #user-name {
+      font-size: 1rem;
+      font-weight: 500;
+      color: #fff;
+    }
+
+    /* Hero Section */
+    .hero {
+      height: 90vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: #fff;
+      position: relative;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.5);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      padding: 20px;
+      opacity: 0;
+      transform: translateY(50px);
+      animation: slideUp 1s ease-out forwards;
+    }
+    @keyframes slideUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+}
+    .hero h1 {
+      font-size: 3.8rem;
+      margin-bottom: 20px;
+    }
+    .hero p {
+      font-size: 1.3rem;
+      margin-bottom: 30px;
+    }
+    .hero .cta-btn {
+      background: #ffcc00;
+      color: #222;
+      font-size: 1.2rem;
+      font-weight: bold;
+      padding: 14px 36px;
+      border-radius: 30px;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+    .hero .cta-btn:hover {
+      background: #e6b800;
+    }
+
+    /* Intro Section */
+    .intro {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 40px;
+      background: #181818;
+      gap: 40px;
+    }
+    .intro-text {
+      flex: 1;
+      min-width: 300px;
+    }
+    .intro-text h2 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+    .intro-text p {
+      font-size: 1.1rem;
+      color: #ccc;
+    }
+    .intro-img {
+      flex: 1;
+      min-width: 300px;
+    }
+    .intro-img img {
+      width: 29%;
+      border-radius: 12px;
+    }
+
+    /* Features */
+    .features {
+      padding: 80px 40px;
+      text-align: center;
+    }
+    .features h2 {
+      font-size: 2.5rem;
+      margin-bottom: 40px;
+    }
+    .feature-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+      gap: 24px;
+    }
+    .card {
+      background: #222;
+      padding: 30px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: transform 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-8px);
+    }
+    .card h3 {
+      margin-bottom: 12px;
+      font-size: 1.4rem;
+    }
+    .card p {
+      font-size: 1rem;
+      color: #ccc;
+    }
+
+    /* Upload Section */
+    .upload-section {
+      padding: 80px 20px;
+      text-align: center;
+      background: #181818;
+    }
+    .upload-box {
+      background: rgba(22,22,22,0.9);
+      border: 2px solid #333;
+      border-radius: 14px;
+      padding: 52px 38px;
+      width: 380px;
+      margin: 0 auto;
+      box-sizing: border-box;
+      box-shadow: 0 6px 24px rgba(0,0,0,.4);
+    }
+    .upload-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px auto;
+      width: 56px;
+      height: 56px;
+      border: 2px dashed #666;
+      border-radius: 12px;
+    }
+    .upload-icon svg {
+      width: 28px;
+      height: 28px;
+      stroke: #888;
+      stroke-width: 2;
+    }
+    .upload-text {
+      color: #bbb;
+      font-size: 1.2rem;
+      margin-bottom: 14px;
+    }
+    label.browse-btn {
+      background: #333;
+      color: #fff;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      padding: 14px 40px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: inline-block;
+      margin-bottom: 18px;
+    }
+    label.browse-btn:hover {
+      background: #555;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .file-name {
+      color: #eee;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      min-height: 22px;
+      word-break: break-word;
+    }
+    button.upload-btn {
+      background: #ffcc00;
+      color: #222;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 40px;
+      padding: 12px 36px;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 80%;
+      border: none;
+    }
+    button.upload-btn:hover {
+      background: #e6b800;
+    }
+
+    /* Footer */
+    .footer {
+      background: #1a1a1a;
+      padding: 40px 20px;
+      text-align: center;
+      color: #bbb;
+    }
+    .footer a {
+      color: #ffcc00;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">Traffic Portal</div>
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="{{ url_for('complaint') }}">Lodge Complaint</a></li>
+      <li><a href="#">Features ▾</a>
+        <ul>
+          <li><a href="#">Upload Traffic Video</a></li>
+          <li><a href="#">Live Traffic View</a></li>
+          <li><a href="#">Reports</a></li>
+        </ul>
+      </li>
+      <li><a href="#">About ▾</a>
+        <ul>
+          <li><a href="#">Our Team</a></li>
+          <li><a href="#">Contact</a></li>
+    </ul>
+      <li>
+        <div id="g_id_onload"
+             data-client_id="260197927815-bthjovm9cn7qkueribkg1hkojnr2nerg.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse">
+        </div>
+        <div id="google-btn"
+             class="g_id_signin"
+             data-type="icon"
+             data-shape="circle"
+             data-theme="outline"
+             data-size="medium">
+        </div>
+        <!-- Profile (shown after login) -->
+        <div id="profile-container">
+          <img id="profile-pic" alt="Profile Picture">
+          <span id="user-name"></span>
+        </div>
+      </li>
+  </nav>
+</head>
+<body>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Smart Traffic Management</h1>
+      <p>Upload, analyze, and manage traffic videos with AI-powered insights.</p>
+      <a href="#upload" class="cta-btn">Get Started</a>
+    </div>
+  </section>
+
+  <!-- Intro -->
+  <section class="intro">
+    <div class="intro-text">
+      <h2>Welcome to Traffic Portal</h2>
+      <p>
+        Our platform helps cities and researchers manage traffic efficiently
+        using cutting-edge computer vision and AI. Upload your traffic videos,
+        generate reports, and explore data-driven insights for better road management.
+      </p>
+    </div>
+    <div class="intro-img">
+      <img src="{{ url_for('static', filename='images/generatedimage.png') }}" alt="Traffic">
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <h2>Key Features</h2>
+    <div class="feature-cards">
+      <div class="card">
+        <h3>Video Upload</h3>
+        <p>Upload traffic videos in just a few clicks and let our AI process them instantly.</p>
+      </div>
+      <div class="card">
+        <h3>Live Monitoring</h3>
+        <p>Keep track of real-time vehicle density and congestion using advanced analytics.</p>
+      </div>
+      <div class="card">
+        <h3>Reports & Insights</h3>
+        <p>Generate visual reports, understand traffic flow, and make data-driven decisions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Upload -->
+  <section id="upload" class="upload-section">
+    <h2>Upload Traffic Video</h2>
+    <form action="/upload" method="post" enctype="multipart/form-data" class="upload-box"
+          ondrop="handleDrop(event)" ondragover="event.preventDefault()">
+      <div class="upload-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 40 40">
+          <path d="M20 30V10M20 10l-8 8M20 10l8 8" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="upload-text">Drag & drop a video file<br>or click below</div>
+      <label class="browse-btn" for="videoInput">Browse</label>
+      <input type="file" id="videoInput" name="video" accept="video/*" required />
+      <div class="file-name" id="fileName"></div>
+      <button type="submit" class="upload-btn">Upload</button>
+    </form>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Traffic Portal. All Rights Reserved.</p>
+    <p>
+      <a href="#">Privacy Policy</a> |
+      <a href="#">Terms of Service</a>
+    </p>
+  </footer>
+
+  <script>
+    const fileInput = document.getElementById('videoInput');
+    const fileNameDisplay = document.getElementById('fileName');
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        fileNameDisplay.textContent = fileInput.files[0].name;
+      } else {
+        fileNameDisplay.textContent = '';
+      }
+    });
+
+    function handleDrop(event) {
+      event.preventDefault();
+      const files = event.dataTransfer.files;
+      if (files.length > 0 && files[0].type.startsWith('video/')) {
+        fileInput.files = files;
+        fileNameDisplay.textContent = files[0].name;
+      } else {
+        fileNameDisplay.textContent = 'Please upload a valid video file.';
+        fileInput.value = '';
+      }
+    }
+
+    // Handle Google sign-in response
+    function handleCredentialResponse(response) {
+      fetch("/google-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: response.credential })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Login response:", data);
+        if (data.picture && data.name) {
+          document.getElementById("google-btn").style.display = "none";
+          document.getElementById("profile-container").style.display = "flex";
+          document.getElementById("profile-pic").src = data.picture;
+          document.getElementById("user-name").innerText = data.name;
+        } else {
+          alert("Login succeeded but no profile info found!");
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Draw Lanes - {{ filename }}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: #111 ;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+    }
+    h3 {
+      color: #fff;
+      font-weight: bold;
+      font-size: 2.6rem;
+      margin-bottom: 24px;
+      letter-spacing: 1.5px;
+      text-align: center;
+      text-shadow: 1px 1px 6px #000;
+    }
+    #canvas {
+      border: 1px solid #444;
+      border-radius: 10px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+      max-width: 960px;
+      width: 100%;
+      background: #222;
+      cursor: crosshair;
+    }
+    .controls {
+      margin-top: 16px;
+      max-width: 960px;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    button, a#view-upload {
+      background: #222;
+      color: #eee;
+      font-weight: bold;
+      font-size: 1.1rem;
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      text-decoration: none;
+      user-select: none;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    button:hover, a#view-upload:hover {
+      background: #fff;
+      color: #111;
+    }
+    p {
+      max-width: 960px;
+      color: #bbb;
+      font-size: 1.1rem;
+      text-align: center;
+      margin-top: 24px;
+      text-shadow: 0 0 3px #000;
+    }
+  </style>
+</head>
+<body>
+  <h3>Draw Lanes on: {{ filename }}</h3>
+  <canvas id="canvas"></canvas>
+  <div class="controls">
+    <button id="undo">Undo last point</button>
+    <button id="finish">Finish Lane (Right click / Finish)</button>
+    <button id="save">Save Lanes</button>
+    <button id="process">Save & Run Detection</button>
+    <a id="view-upload" href="/videos/uploads/{{ filename }}" target="_blank">View Uploaded Video</a>
+  </div>
+  <p>Left click to add points. Right click to finish polygon (or use Finish Lane button). Click Save to store lanes.</p>
+
+<script>
+const filename = '{{ filename }}';
+let img = new Image();
+img.src = '/frame/' + filename + '?cache=' + Date.now();
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let displayW = 960; // desired display width
+
+img.onload = () => {
+  const origW = img.width, origH = img.height;
+  const aspect = origH / origW;
+  displayW = Math.min(960, origW);
+  const displayH = Math.round(displayW * aspect);
+  canvas.width = displayW; canvas.height = displayH;
+  ctx.drawImage(img, 0, 0, displayW, displayH);
+};
+
+let lanes = {}; // name -> array of points in original resolution
+let current = [];
+let laneIndex = 1;
+
+function drawAll(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img, 0,0, canvas.width, canvas.height);
+  // draw existing
+  for(const name in lanes){
+    const poly = lanes[name].map(p => scaleToDisplay(p));
+    ctx.beginPath();
+    ctx.moveTo(poly[0][0], poly[0][1]);
+    for(let i=1;i<poly.length;i++) ctx.lineTo(poly[i][0], poly[i][1]);
+    ctx.closePath();
+    ctx.strokeStyle='cyan'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='black'; ctx.fillText(name, poly[0][0]+4, poly[0][1]+4);
+  }
+  // current
+  if(current.length>0){
+    const dcur = current.map(p => scaleToDisplay(p));
+    ctx.beginPath(); ctx.moveTo(dcur[0][0], dcur[0][1]);
+    for(let i=1;i<dcur.length;i++) ctx.lineTo(dcur[i][0], dcur[i][1]);
+    ctx.strokeStyle='red'; ctx.lineWidth=2; ctx.stroke();
+  }
+}
+
+function scaleToOriginal(pt){
+  // pt is display coords -> convert to original video coords
+  const x = pt[0] * (img.width / canvas.width);
+  const y = pt[1] * (img.height / canvas.height);
+  return [Math.round(x), Math.round(y)];
+}
+function scaleToDisplay(pt){
+  const x = pt[0] * (canvas.width / img.width);
+  const y = pt[1] * (canvas.height / img.height);
+  return [Math.round(x), Math.round(y)];
+}
+
+canvas.addEventListener('mousedown', (e)=>{
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+  if(e.button === 0){ // left
+    const orig = scaleToOriginal([x,y]);
+    current.push(orig);
+    drawAll();
+  }
+});
+
+canvas.addEventListener('contextmenu', (e)=>{ // right-click finish
+  e.preventDefault();
+  if(current.length > 2){
+    lanes['Lane ' + laneIndex] = current.slice();
+    laneIndex += 1; current = [];
+    drawAll();
+  }
+});
+
+document.getElementById('undo').onclick = ()=>{ if(current.length) current.pop(); drawAll(); };
+document.getElementById('finish').onclick = ()=>{ if(current.length>2){ lanes['Lane ' + laneIndex] = current.slice(); laneIndex+=1; current = []; drawAll(); }};
+
+async function saveLanes(runProcess=false){
+  const payload = { filename: filename, lanes: lanes };
+  const res = await fetch('/save_lanes', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  });
+  const json = await res.json();
+  if(json.status === 'ok'){
+    alert('Saved');
+    if(runProcess) window.location = '/process/' + filename;
+  } else { alert('Error saving'); }
+}
+
+document.getElementById('save').onclick = ()=> saveLanes(false);
+document.getElementById('process').onclick = ()=> saveLanes(true);
+
+</script>
+</body>
+</html>

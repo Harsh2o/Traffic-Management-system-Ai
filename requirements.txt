@@ -1,0 +1,7 @@
+Flask
+opencv-python
+numpy
+ultralytics
+google-auth
+flask-mail
+Werkzeug

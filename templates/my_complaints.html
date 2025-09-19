@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Complaints</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: #f1f1f1;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 40px auto;
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0px 6px 12px rgba(0,0,0,0.5);
+        }
+        h2, h3 {
+            margin: 0 0 10px 0;
+            color: #f9d342;
+        }
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        .profile img {
+            border-radius: 50%;
+            width: 65px;
+            height: 65px;
+            border: 2px solid #f9d342;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: #2a2a2a;
+            margin: 12px 0;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        li:hover {
+            transform: scale(1.02);
+        }
+        .complaint-text {
+            max-width: 80%;
+        }
+        .delete-btn {
+            background: #f9d342;
+            color: #121212;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .delete-btn:hover {
+            background: #e6c230;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-top: 25px;
+            background: #f9d342;
+            color: #121212;
+            padding: 10px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: #e6c230;
+        }
+    </style>
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div style="background:#f9d342; color:#121212; padding:10px; border-radius:6px; margin-bottom:15px;">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+    <div class="container">
+        <div class="profile">
+            <img src="{{ user['picture'] }}" alt="Profile Picture">
+            <div>
+                <h2>{{ user['name'] }}</h2>
+                <p>{{ user['email'] }}</p>
+            </div>
+        </div>
+        <h3>Your Complaints</h3>
+        <div class="complaints-list">
+            {% if complaints %}
+            <ul>
+                {% for c in complaints %}
+                <li class="complaint-item">
+                    <div class="complaint-text">
+                        <strong>{{ c.date }} {{ c.time }}</strong> – <em>{{ c.location }}</em><br>
+                        {{ c.complaint }}
+                    </div>
+                    <form action="/delete_complaint/{{ c.id }}" method="POST" style="display:inline;">
+                        <button type="submit" class="delete-btn">Delete</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No complaints submitted yet.</p>
+            {% endif %}
+        </div>
+
+        <a href="/" class="back-btn">⬅ Back</a>
+    </div>
+</body>
+</html>
